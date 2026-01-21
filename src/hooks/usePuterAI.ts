@@ -1,10 +1,21 @@
 import { useState, useCallback } from 'react';
 
+interface PuterAIResponse {
+  message?: {
+    content: string;
+  };
+  choices?: Array<{
+    message?: {
+      content: string;
+    };
+  }>;
+}
+
 declare global {
   interface Window {
     puter: {
       ai: {
-        chat: (prompt: string | Array<{type: string; text?: string; image_url?: { url: string }}>, options?: { model?: string; stream?: boolean }) => Promise<string>;
+        chat: (prompt: string | Array<{type: string; text?: string; image_url?: { url: string }}>, options?: { model?: string; stream?: boolean }) => Promise<string | PuterAIResponse>;
       };
     };
   }
@@ -72,10 +83,22 @@ Keep responses concise but helpful. If you can't see something clearly, ask for 
         model: 'gpt-4o'
       });
 
+      // Puter.js returns an object with message.content, not a plain string
+      let responseText: string;
+      if (typeof response === 'string') {
+        responseText = response;
+      } else if (response?.message?.content) {
+        responseText = response.message.content;
+      } else if (response?.choices?.[0]?.message?.content) {
+        responseText = response.choices[0].message.content;
+      } else {
+        responseText = String(response);
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response,
+        content: responseText,
         timestamp: new Date()
       };
 
