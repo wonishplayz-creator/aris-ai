@@ -4,7 +4,7 @@ declare global {
   interface Window {
     puter: {
       ai: {
-        chat: (prompt: string, options?: { model?: string; stream?: boolean }) => Promise<string>;
+        chat: (prompt: string | Array<{type: string; text?: string; image_url?: { url: string }}>, options?: { model?: string; stream?: boolean }) => Promise<string>;
       };
     };
   }
@@ -31,38 +31,6 @@ export const usePuterAI = () => {
     return false;
   }, []);
 
-  const analyzeImage = useCallback(async (imageData: string, userPrompt?: string): Promise<string> => {
-    if (!window.puter) {
-      throw new Error('Puter.js not loaded');
-    }
-
-    const prompt = userPrompt || `You are YourFace AI, an expert trading card game analyst. Analyze this image of trading cards (Pokemon, Yu-Gi-Oh, Magic: The Gathering, etc.).
-
-Identify:
-1. What cards are visible
-2. Card names, types, HP/stats if visible
-3. Any attacks, abilities, or effects
-4. Strategic recommendations for gameplay
-
-If it's a Pokemon card game scenario, suggest:
-- Best moves to make
-- Energy requirements
-- Weaknesses to watch for
-- Overall strategy tips
-
-Be conversational and helpful. If you can't see cards clearly, ask for a better angle.`;
-
-    // For Puter.js, we need to describe what we see since it doesn't support direct image input
-    // We'll send a prompt that includes the image context
-    const fullPrompt = `${prompt}\n\n[User has shared a camera view of their cards. Analyze and provide strategic advice.]`;
-    
-    const response = await window.puter.ai.chat(fullPrompt, {
-      model: 'gpt-4o'
-    });
-
-    return response;
-  }, []);
-
   const sendMessage = useCallback(async (content: string, imageData?: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -76,12 +44,28 @@ Be conversational and helpful. If you can't see cards clearly, ask for a better 
     setIsLoading(true);
 
     try {
-      let prompt = content;
+      let prompt: string | Array<{type: string; text?: string; image_url?: { url: string }}>;
       
+      const systemContext = `You are YourFace AI - a friendly, helpful AI vision assistant. You can see what the user shows you through their camera. Be conversational, helpful, and enthusiastic. You help with:
+- Identifying objects, text, products, plants, animals
+- Reading and translating text in images
+- Playing games (card games, board games, video games) - give strategic advice
+- Cooking help - identify ingredients, suggest recipes
+- Homework and learning - explain concepts visible in images
+- Shopping - compare products, read labels
+- Tech support - help with device screens, error messages
+- And anything else visual!
+
+Keep responses concise but helpful. If you can't see something clearly, ask for a better angle. Be friendly and proactive with suggestions.`;
+
       if (imageData) {
-        prompt = `The user is showing you their trading cards via camera. Their message: "${content}"
-        
-You are YourFace AI - a friendly, expert card game strategist. Help them understand their cards, suggest moves, explain mechanics, and provide winning strategies. Be enthusiastic about card games!`;
+        // Use vision capabilities with the image
+        prompt = [
+          { type: "text", text: `${systemContext}\n\nUser's request: ${content}` },
+          { type: "image_url", image_url: { url: imageData } }
+        ];
+      } else {
+        prompt = `${systemContext}\n\nUser's request: ${content}\n\n(Note: No image was provided with this message. If you need to see something, ask the user to point their camera at it.)`;
       }
 
       const response = await window.puter.ai.chat(prompt, {
@@ -101,13 +85,17 @@ You are YourFace AI - a friendly, expert card game strategist. Help them underst
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please make sure Puter.js is loaded and try again.',
+        content: 'Oops! I had trouble processing that. Please try again or check your connection.',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  const dismissMessage = useCallback((id: string) => {
+    setMessages(prev => prev.filter(m => m.id !== id));
   }, []);
 
   const clearMessages = useCallback(() => {
@@ -120,7 +108,7 @@ You are YourFace AI - a friendly, expert card game strategist. Help them underst
     isInitialized,
     initPuter,
     sendMessage,
-    analyzeImage,
+    dismissMessage,
     clearMessages
   };
 };
