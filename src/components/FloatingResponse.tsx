@@ -47,8 +47,8 @@ export const FloatingResponse = ({ messages, isLoading, onDismiss }: FloatingRes
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 bg-muted/30">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-xs font-medium text-foreground">YourFace AI</span>
+              <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-xs font-medium text-foreground">Aris</span>
                 <span className="text-[10px] text-muted-foreground">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const MEMORY_STORAGE_KEY = 'yourface_memory';
-const FACE_STORAGE_KEY = 'yourface_face_profile';
+const MEMORY_STORAGE_KEY = 'aris_memory';
+const FACE_STORAGE_KEY = 'aris_face_profile';
 
 export interface FaceProfile {
   name: string;

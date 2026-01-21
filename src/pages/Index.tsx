@@ -137,7 +137,7 @@ const Index = () => {
         </div>
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Your<span className="text-primary">Face</span>
+            <span className="text-primary">Aris</span>
           </h1>
           <p className="text-muted-foreground">Your AI Vision Companion</p>
         </div>

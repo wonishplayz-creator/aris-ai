@@ -147,10 +147,9 @@ export const FloatingChat = ({
           </div>
         </form>
 
-        {/* Powered by indicator */}
         <div className="flex justify-center mt-2">
           <span className="text-[10px] text-muted-foreground/50">
-            YourFace AI • GPT-4o via Puter.js
+            Aris AI • GPT-4o via Puter.js
           </span>
         </div>
       </div>
