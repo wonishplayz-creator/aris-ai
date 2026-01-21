@@ -1,9 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { FullscreenCamera } from '@/components/FullscreenCamera';
 import { FloatingChat } from '@/components/FloatingChat';
 import { FloatingResponse } from '@/components/FloatingResponse';
+import { VoiceIndicator } from '@/components/VoiceIndicator';
 import { usePuterAI } from '@/hooks/usePuterAI';
+import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Index = () => {
   const [pendingImage, setPendingImage] = useState<string | null>(null);
@@ -12,6 +15,30 @@ const Index = () => {
   const captureRef = useRef<(() => string | null) | null>(null);
   
   const { messages, isLoading, sendMessage, dismissMessage, initPuter } = usePuterAI();
+
+  // Voice command handler
+  const handleVoiceCommand = useCallback((command: string) => {
+    console.log('Voice command received:', command);
+    
+    // Capture current frame and send with command
+    let imageData: string | null = null;
+    if (captureRef.current) {
+      imageData = captureRef.current();
+    }
+    
+    sendMessage(command, imageData || undefined);
+    toast.success(`Got it: "${command}"`, { duration: 2000 });
+  }, [sendMessage]);
+
+  const handleWakeWordDetected = useCallback(() => {
+    toast.info('Listening...', { duration: 1500 });
+  }, []);
+
+  const voice = useVoiceRecognition({
+    wakeWord: 'hey aris',
+    onWakeWordDetected: handleWakeWordDetected,
+    onCommand: handleVoiceCommand
+  });
 
   useEffect(() => {
     // Load Puter.js
@@ -95,6 +122,15 @@ const Index = () => {
       <FullscreenCamera 
         onCapture={handleCapture} 
         captureRef={captureRef}
+      />
+
+      {/* Voice indicator */}
+      <VoiceIndicator
+        isEnabled={voice.isEnabled}
+        isListening={voice.isListening}
+        isAwaitingCommand={voice.isAwaitingCommand}
+        transcript={voice.transcript}
+        onToggle={voice.toggleEnabled}
       />
 
       {/* Floating responses */}
