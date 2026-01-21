@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+
+const CHAT_STORAGE_KEY = 'aris_chat_history';
 
 interface PuterAIResponse {
   message?: {
@@ -36,8 +38,31 @@ export interface Message {
 }
 
 export const usePuterAI = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((m: Message) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to load chat history:', e);
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(false);
+
+  // Persist messages to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    } catch (e) {
+      console.error('Failed to save chat history:', e);
+    }
+  }, [messages]);
 
   const sendMessage = useCallback(async (content: string, imageData?: string, contextPrompt?: string) => {
     const userMessage: Message = {
