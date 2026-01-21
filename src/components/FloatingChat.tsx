@@ -1,9 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Send, X, Sparkles, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Message } from '@/hooks/usePuterAI';
-import { cn } from '@/lib/utils';
 
 interface FloatingChatProps {
   messages: Message[];
@@ -11,7 +10,7 @@ interface FloatingChatProps {
   onSendMessage: (content: string, imageData?: string) => void;
   pendingImage?: string | null;
   onClearPendingImage?: () => void;
-  onCapture: () => void;
+  onCaptureAndGet: () => string | null;
   isStreaming: boolean;
 }
 
@@ -21,7 +20,7 @@ export const FloatingChat = ({
   onSendMessage,
   pendingImage,
   onClearPendingImage,
-  onCapture,
+  onCaptureAndGet,
   isStreaming
 }: FloatingChatProps) => {
   const [input, setInput] = useState('');
@@ -32,21 +31,27 @@ export const FloatingChat = ({
     e.preventDefault();
     if (!input.trim() && !pendingImage) return;
     
-    // Auto-capture if no pending image
-    if (!pendingImage && isStreaming) {
-      onCapture();
+    let imageToSend = pendingImage;
+    
+    // Auto-capture if no pending image and camera is streaming
+    if (!imageToSend && isStreaming) {
+      imageToSend = onCaptureAndGet();
     }
     
-    onSendMessage(input || 'What do you see?', pendingImage || undefined);
+    onSendMessage(input || 'What do you see?', imageToSend || undefined);
     setInput('');
     onClearPendingImage?.();
   };
 
   const handleQuickAction = (prompt: string) => {
+    let imageToSend = pendingImage;
+    
+    // Capture fresh image for quick actions
     if (isStreaming) {
-      onCapture();
+      imageToSend = onCaptureAndGet();
     }
-    onSendMessage(prompt, pendingImage || undefined);
+    
+    onSendMessage(prompt, imageToSend || undefined);
     onClearPendingImage?.();
   };
 

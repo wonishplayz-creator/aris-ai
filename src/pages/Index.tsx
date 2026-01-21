@@ -9,7 +9,7 @@ const Index = () => {
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [puterLoaded, setPuterLoaded] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const captureRef = useRef<(() => void) | null>(null);
+  const captureRef = useRef<(() => string | null) | null>(null);
   
   const { messages, isLoading, sendMessage, dismissMessage, initPuter } = usePuterAI();
 
@@ -50,14 +50,20 @@ const Index = () => {
     setPendingImage(imageData);
   };
 
-  const triggerCapture = () => {
+  // Returns the captured image data directly
+  const captureAndGet = (): string | null => {
     if (captureRef.current) {
-      captureRef.current();
+      return captureRef.current();
     }
+    return null;
   };
 
   const handleSendMessage = (content: string, imageData?: string) => {
     sendMessage(content, imageData);
+    // Clear pending image after sending
+    if (imageData) {
+      setPendingImage(null);
+    }
   };
 
   if (!puterLoaded) {
@@ -105,7 +111,7 @@ const Index = () => {
         onSendMessage={handleSendMessage}
         pendingImage={pendingImage}
         onClearPendingImage={() => setPendingImage(null)}
-        onCapture={triggerCapture}
+        onCaptureAndGet={captureAndGet}
         isStreaming={isStreaming}
       />
     </div>
