@@ -15,10 +15,11 @@ export const FloatingResponse = ({ messages, isLoading, onDismiss }: FloatingRes
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [visibleMessages, setVisibleMessages] = useState<Message[]>([]);
 
-  // Only show the last 3 assistant messages
+  // Only show the latest assistant message, dismiss previous on new message
   useEffect(() => {
-    const assistantMessages = messages.filter(m => m.role === 'assistant').slice(-3);
-    setVisibleMessages(assistantMessages);
+    const assistantMessages = messages.filter(m => m.role === 'assistant');
+    const latestMessage = assistantMessages.slice(-1);
+    setVisibleMessages(latestMessage);
   }, [messages]);
 
   const handleCopy = async (content: string, id: string) => {
