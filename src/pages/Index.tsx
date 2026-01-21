@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react';
-import { CameraView } from '@/components/CameraView';
-import { ChatBox } from '@/components/ChatBox';
-import { YourFaceLogo } from '@/components/YourFaceLogo';
+import { useState, useEffect, useRef } from 'react';
+import { FullscreenCamera } from '@/components/FullscreenCamera';
+import { FloatingChat } from '@/components/FloatingChat';
+import { FloatingResponse } from '@/components/FloatingResponse';
 import { usePuterAI } from '@/hooks/usePuterAI';
-import { Loader2 } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 
 const Index = () => {
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [puterLoaded, setPuterLoaded] = useState(false);
-  const { messages, isLoading, sendMessage, clearMessages, initPuter } = usePuterAI();
+  const [isStreaming, setIsStreaming] = useState(false);
+  const captureRef = useRef<(() => void) | null>(null);
+  
+  const { messages, isLoading, sendMessage, dismissMessage, initPuter } = usePuterAI();
 
   useEffect(() => {
     // Load Puter.js
@@ -25,12 +28,32 @@ const Index = () => {
     document.head.appendChild(script);
 
     return () => {
-      document.head.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, [initPuter]);
 
+  // Track streaming state
+  useEffect(() => {
+    const checkStreaming = setInterval(() => {
+      const video = document.querySelector('video');
+      if (video && video.srcObject) {
+        const stream = video.srcObject as MediaStream;
+        setIsStreaming(stream.active);
+      }
+    }, 500);
+    return () => clearInterval(checkStreaming);
+  }, []);
+
   const handleCapture = (imageData: string) => {
     setPendingImage(imageData);
+  };
+
+  const triggerCapture = () => {
+    if (captureRef.current) {
+      captureRef.current();
+    }
   };
 
   const handleSendMessage = (content: string, imageData?: string) => {
@@ -39,8 +62,19 @@ const Index = () => {
 
   if (!puterLoaded) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <YourFaceLogo />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
+        <div className="relative">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-2xl shadow-primary/30">
+            <Sparkles className="w-10 h-10 text-primary-foreground" />
+          </div>
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-success rounded-full border-4 border-background animate-pulse" />
+        </div>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Your<span className="text-primary">Face</span>
+          </h1>
+          <p className="text-muted-foreground">Your AI Vision Companion</p>
+        </div>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span>Loading AI...</span>
@@ -50,35 +84,30 @@ const Index = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Header */}
-      <header className="flex-shrink-0 px-4 py-3 bg-card/80 backdrop-blur-lg border-b border-border flex items-center justify-between z-10">
-        <YourFaceLogo />
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          <span>GPT-4o via Puter.js</span>
-        </div>
-      </header>
+    <div className="h-screen w-screen overflow-hidden">
+      {/* Fullscreen camera */}
+      <FullscreenCamera 
+        onCapture={handleCapture} 
+        captureRef={captureRef}
+      />
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Camera section - takes 60% of remaining height */}
-        <div className="flex-[3] min-h-0 p-3">
-          <CameraView onCapture={handleCapture} />
-        </div>
+      {/* Floating responses */}
+      <FloatingResponse 
+        messages={messages}
+        isLoading={isLoading}
+        onDismiss={dismissMessage}
+      />
 
-        {/* Chat section - takes 40% of remaining height */}
-        <div className="flex-[2] min-h-0">
-          <ChatBox
-            messages={messages}
-            isLoading={isLoading}
-            onSendMessage={handleSendMessage}
-            onClearMessages={clearMessages}
-            pendingImage={pendingImage}
-            onClearPendingImage={() => setPendingImage(null)}
-          />
-        </div>
-      </div>
+      {/* Floating chat bar */}
+      <FloatingChat
+        messages={messages}
+        isLoading={isLoading}
+        onSendMessage={handleSendMessage}
+        pendingImage={pendingImage}
+        onClearPendingImage={() => setPendingImage(null)}
+        onCapture={triggerCapture}
+        isStreaming={isStreaming}
+      />
     </div>
   );
 };
