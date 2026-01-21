@@ -85,24 +85,7 @@ export const usePuterAI = () => {
 - Homework and learning - explain concepts visible in images
 - Shopping - compare products, read labels
 - Tech support - help with device screens, error messages
-- Adding FUN visual effects to the screen!
-
-SCREEN EFFECTS: You can add visual effects to the user's screen by including special tags in your response. Use these when the user asks for effects or when it would be fun/appropriate:
-- [EFFECT:GLASSES] - Show fun glasses on screen
-- [EFFECT:SUNGLASSES] - Show cool sunglasses
-- [EFFECT:HEARTS] - Floating hearts animation
-- [EFFECT:SPARKLES] - Sparkle particles
-- [EFFECT:FIRE] - Fire emoji particles
-- [EFFECT:SNOW] - Snow falling effect
-- [EFFECT:CONFETTI] - Celebration confetti
-- [EFFECT:RAINBOW] - Rainbow color overlay
-- [EFFECT:NEON] - Neon glow effect
-- [EFFECT:PARTY] - Party mode with disco vibes
-- [EFFECT:RETRO] - Vintage/sepia filter
-- [EFFECT:VIGNETTE] - Dramatic vignette
-- [EFFECT:CLEAR] - Remove all effects
-
-Example: "Here's some sparkles for you! [EFFECT:SPARKLES] ✨"
+- And anything else visual!
 
 Keep responses concise but helpful. If you can't see something clearly, ask for a better angle. Be friendly and proactive with suggestions.`;
 

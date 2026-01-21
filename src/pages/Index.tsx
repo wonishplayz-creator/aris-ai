@@ -4,12 +4,10 @@ import { FloatingChat } from '@/components/FloatingChat';
 import { FloatingResponse } from '@/components/FloatingResponse';
 import { VoiceIndicator } from '@/components/VoiceIndicator';
 import { FaceSetupDialog } from '@/components/FaceSetupDialog';
-import { ScreenEffects } from '@/components/ScreenEffects';
 import { usePuterAI } from '@/hooks/usePuterAI';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { useMemory } from '@/hooks/useMemory';
-import { useScreenEffects, parseEffectCommands, cleanEffectTags } from '@/hooks/useScreenEffects';
-import { Sparkles, Loader2, User } from 'lucide-react';
+import { Sparkles, Loader2, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -22,22 +20,6 @@ const Index = () => {
   
   const { messages, isLoading, sendMessage, dismissMessage } = usePuterAI();
   const memory = useMemory();
-  const screenEffects = useScreenEffects();
-
-  // Process AI responses for effect commands
-  useEffect(() => {
-    const lastMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
-    if (lastMessage) {
-      const effects = parseEffectCommands(lastMessage.content);
-      effects.forEach(effect => {
-        if (effect.type === 'none') {
-          screenEffects.clearAllEffects();
-        } else {
-          screenEffects.addEffect(effect.type, effect.duration);
-        }
-      });
-    }
-  }, [messages]);
 
   // Enhanced send message with memory context
   const sendMessageWithContext = useCallback((content: string, imageData?: string) => {
@@ -169,9 +151,6 @@ const Index = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden">
-      {/* Screen effects overlay */}
-      <ScreenEffects activeEffects={screenEffects.activeEffects} />
-
       {/* Fullscreen camera */}
       <FullscreenCamera 
         onCapture={handleCapture} 

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Camera, CameraOff, RotateCcw } from 'lucide-react';
+import { Camera, CameraOff, RotateCcw, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCamera } from '@/hooks/useCamera';
 
@@ -27,6 +27,12 @@ export const FullscreenCamera = ({ onCapture, captureRef }: FullscreenCameraProp
     };
   }, [captureFrame, onCapture, captureRef]);
 
+  const handleCapture = () => {
+    const imageData = captureFrame();
+    if (imageData) {
+      onCapture(imageData);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-background">
@@ -76,6 +82,16 @@ export const FullscreenCamera = ({ onCapture, captureRef }: FullscreenCameraProp
             {isStreaming ? <CameraOff className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
           </Button>
 
+          {isStreaming && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-full"
+              onClick={handleCapture}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
 
