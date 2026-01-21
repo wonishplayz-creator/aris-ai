@@ -74,9 +74,9 @@ export const FloatingChat = ({
               size="sm"
               variant="secondary"
               className="rounded-full bg-background/80 backdrop-blur-xl border border-border/50 hover:bg-background/90 shadow-lg"
-              onClick={() => handleQuickAction("Read any text you can see")}
+              onClick={() => handleQuickAction("Add a fun effect to my screen! Maybe glasses, hearts, sparkles, or something cool")}
             >
-              Read text
+              ✨ Effects
             </Button>
             <Button
               size="sm"
@@ -85,14 +85,6 @@ export const FloatingChat = ({
               onClick={() => handleQuickAction("Help me with this game - what should I do?")}
             >
               Game help
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="rounded-full bg-background/80 backdrop-blur-xl border border-border/50 hover:bg-background/90 shadow-lg"
-              onClick={() => handleQuickAction("Describe everything in detail")}
-            >
-              Describe all
             </Button>
           </div>
         )}
