@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Camera, CameraOff, RotateCcw, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCamera } from '@/hooks/useCamera';
 
 interface FullscreenCameraProps {
   onCapture: (imageData: string) => void;
-  captureRef: React.MutableRefObject<(() => void) | null>;
+  captureRef: React.MutableRefObject<(() => string | null) | null>;
 }
 
 export const FullscreenCamera = ({ onCapture, captureRef }: FullscreenCameraProps) => {
@@ -15,13 +15,15 @@ export const FullscreenCamera = ({ onCapture, captureRef }: FullscreenCameraProp
     startCamera();
   }, [startCamera]);
 
-  // Expose capture function to parent
+  // Expose capture function to parent - returns the image data
   useEffect(() => {
     captureRef.current = () => {
       const imageData = captureFrame();
       if (imageData) {
         onCapture(imageData);
+        return imageData;
       }
+      return null;
     };
   }, [captureFrame, onCapture, captureRef]);
 
