@@ -3,32 +3,47 @@ import { FullscreenCamera } from '@/components/FullscreenCamera';
 import { FloatingChat } from '@/components/FloatingChat';
 import { FloatingResponse } from '@/components/FloatingResponse';
 import { VoiceIndicator } from '@/components/VoiceIndicator';
+import { FaceSetupDialog } from '@/components/FaceSetupDialog';
 import { usePuterAI } from '@/hooks/usePuterAI';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { useMemory } from '@/hooks/useMemory';
+import { Sparkles, Loader2, User, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const Index = () => {
   const [pendingImage, setPendingImage] = useState<string | null>(null);
   const [puterLoaded, setPuterLoaded] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [showFaceSetup, setShowFaceSetup] = useState(false);
   const captureRef = useRef<(() => string | null) | null>(null);
   
-  const { messages, isLoading, sendMessage, dismissMessage, initPuter } = usePuterAI();
+  const { messages, isLoading, sendMessage, dismissMessage } = usePuterAI();
+  const memory = useMemory();
+
+  // Enhanced send message with memory context
+  const sendMessageWithContext = useCallback((content: string, imageData?: string) => {
+    const contextPrompt = memory.getContextPrompt();
+    sendMessage(content, imageData, contextPrompt);
+    
+    // Add notable interactions to memory
+    if (content.length > 10) {
+      memory.addMemory(`User asked: "${content.slice(0, 100)}"`);
+    }
+  }, [sendMessage, memory]);
 
   // Voice command handler
   const handleVoiceCommand = useCallback((command: string) => {
     console.log('Voice command received:', command);
     
-    // Capture current frame and send with command
     let imageData: string | null = null;
     if (captureRef.current) {
       imageData = captureRef.current();
     }
     
-    sendMessage(command, imageData || undefined);
+    sendMessageWithContext(command, imageData || undefined);
     toast.success(`Got it: "${command}"`, { duration: 2000 });
-  }, [sendMessage]);
+  }, [sendMessageWithContext]);
 
   const handleWakeWordDetected = useCallback(() => {
     toast.info('Listening...', { duration: 1500 });
@@ -40,26 +55,46 @@ const Index = () => {
     onCommand: handleVoiceCommand
   });
 
+  // Improved Puter.js loading with retry logic
   useEffect(() => {
-    // Load Puter.js
-    const script = document.createElement('script');
-    script.src = 'https://js.puter.com/v2/';
-    script.async = true;
-    script.onload = () => {
-      setTimeout(() => {
-        if (initPuter()) {
-          setPuterLoaded(true);
-        }
-      }, 500);
-    };
-    document.head.appendChild(script);
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
+    let attempts = 0;
+    const maxAttempts = 20;
+    
+    const checkPuter = () => {
+      if (window.puter?.ai?.chat) {
+        setPuterLoaded(true);
+        return true;
       }
+      return false;
     };
-  }, [initPuter]);
+
+    // Check if already loaded
+    if (checkPuter()) return;
+
+    // Load Puter.js script
+    const existingScript = document.querySelector('script[src*="puter.com"]');
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.src = 'https://js.puter.com/v2/';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
+    // Poll for Puter availability
+    const interval = setInterval(() => {
+      attempts++;
+      if (checkPuter()) {
+        clearInterval(interval);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        // Load anyway and let it fail gracefully
+        setPuterLoaded(true);
+        console.warn('Puter.js may not be fully loaded');
+      }
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Track streaming state
   useEffect(() => {
@@ -77,7 +112,6 @@ const Index = () => {
     setPendingImage(imageData);
   };
 
-  // Returns the captured image data directly
   const captureAndGet = (): string | null => {
     if (captureRef.current) {
       return captureRef.current();
@@ -86,8 +120,7 @@ const Index = () => {
   };
 
   const handleSendMessage = (content: string, imageData?: string) => {
-    sendMessage(content, imageData);
-    // Clear pending image after sending
+    sendMessageWithContext(content, imageData);
     if (imageData) {
       setPendingImage(null);
     }
@@ -97,7 +130,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
         <div className="relative">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-2xl shadow-primary/30">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-2xl shadow-primary/30 animate-pulse">
             <Sparkles className="w-10 h-10 text-primary-foreground" />
           </div>
           <div className="absolute -top-2 -right-2 w-6 h-6 bg-success rounded-full border-4 border-background animate-pulse" />
@@ -110,7 +143,7 @@ const Index = () => {
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin" />
-          <span>Loading AI...</span>
+          <span>Loading Aris...</span>
         </div>
       </div>
     );
@@ -123,6 +156,19 @@ const Index = () => {
         onCapture={handleCapture} 
         captureRef={captureRef}
       />
+
+      {/* Top controls bar */}
+      <div className="fixed top-4 left-4 z-50">
+        <Button
+          size="sm"
+          variant={memory.faceProfile ? "default" : "secondary"}
+          className="rounded-full gap-2"
+          onClick={() => setShowFaceSetup(true)}
+        >
+          <User className="w-4 h-4" />
+          {memory.faceProfile ? memory.faceProfile.name : 'Setup Face'}
+        </Button>
+      </div>
 
       {/* Voice indicator */}
       <VoiceIndicator
@@ -149,6 +195,16 @@ const Index = () => {
         onClearPendingImage={() => setPendingImage(null)}
         onCaptureAndGet={captureAndGet}
         isStreaming={isStreaming}
+      />
+
+      {/* Face setup dialog */}
+      <FaceSetupDialog
+        open={showFaceSetup}
+        onOpenChange={setShowFaceSetup}
+        currentProfile={memory.faceProfile}
+        onSave={memory.saveFaceProfile}
+        onClear={memory.clearFaceProfile}
+        onCaptureFace={captureAndGet}
       />
     </div>
   );

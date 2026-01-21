@@ -38,17 +38,8 @@ export interface Message {
 export const usePuterAI = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
 
-  const initPuter = useCallback(() => {
-    if (typeof window !== 'undefined' && window.puter) {
-      setIsInitialized(true);
-      return true;
-    }
-    return false;
-  }, []);
-
-  const sendMessage = useCallback(async (content: string, imageData?: string) => {
+  const sendMessage = useCallback(async (content: string, imageData?: string, contextPrompt?: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -61,7 +52,7 @@ export const usePuterAI = () => {
     setIsLoading(true);
 
     try {
-      const systemContext = `You are YourFace AI - a friendly, helpful AI vision assistant. You can see what the user shows you through their camera. Be conversational, helpful, and enthusiastic. You help with:
+      const baseContext = `You are Aris - a friendly, helpful AI vision assistant. You can see what the user shows you through their camera. Be conversational, helpful, and enthusiastic. You help with:
 - Identifying objects, text, products, plants, animals
 - Reading and translating text in images
 - Playing games (card games, board games, video games) - give strategic advice
@@ -73,28 +64,30 @@ export const usePuterAI = () => {
 
 Keep responses concise but helpful. If you can't see something clearly, ask for a better angle. Be friendly and proactive with suggestions.`;
 
+      const systemContext = contextPrompt 
+        ? `${baseContext}${contextPrompt}`
+        : baseContext;
+
       const fullPrompt = `${systemContext}\n\nUser's request: ${content}`;
       
       let response: string | PuterAIResponse;
       
       if (imageData) {
         // Puter.js syntax: puter.ai.chat(prompt, image, testMode, options)
-        // Pass the base64 image data directly as the second parameter
         response = await window.puter.ai.chat(
           fullPrompt,
-          imageData, // Pass image as second parameter
-          false, // testMode
+          imageData,
+          false,
           { model: 'gpt-4o' }
         );
       } else {
-        // Text-only request
         response = await window.puter.ai.chat(
           fullPrompt + '\n\n(Note: No image was provided. If you need to see something, ask the user to point their camera at it.)',
           { model: 'gpt-4o' }
         );
       }
 
-      // Extract text from response - Puter.js can return different formats
+      // Extract text from response
       let responseText: string;
       if (typeof response === 'string') {
         responseText = response;
@@ -105,9 +98,7 @@ Keep responses concise but helpful. If you can't see something clearly, ask for 
       } else if (response?.text) {
         responseText = response.text;
       } else if (typeof response === 'object' && response !== null) {
-        // Try to find any string content in the response
-        const str = JSON.stringify(response);
-        console.log('Puter response object:', str);
+        console.log('Puter response object:', JSON.stringify(response));
         responseText = 'I received your message but had trouble parsing the response. Please try again.';
       } else {
         responseText = String(response);
@@ -121,6 +112,7 @@ Keep responses concise but helpful. If you can't see something clearly, ask for 
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      return responseText;
     } catch (error) {
       console.error('AI Error:', error);
       const errorMessage: Message = {
@@ -130,6 +122,7 @@ Keep responses concise but helpful. If you can't see something clearly, ask for 
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -146,8 +139,6 @@ Keep responses concise but helpful. If you can't see something clearly, ask for 
   return {
     messages,
     isLoading,
-    isInitialized,
-    initPuter,
     sendMessage,
     dismissMessage,
     clearMessages
